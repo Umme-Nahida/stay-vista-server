@@ -118,6 +118,19 @@ async function run() {
       res.send(rooms)
     })
 
+    // get host room 
+    try{
+       app.get('/hostRooms/:email',async(req,res)=>{
+         const email = req.params.email;
+         console.log(email)
+         const query = {'host.email': email}
+         const result = await roomsCollection.find(query).toArray()
+         res.send(result)
+       })
+    }catch(err){
+      console.log(err)
+    }
+
     // save room data 
     try{
       app.post('/saveRooms',async(req,res)=>{
