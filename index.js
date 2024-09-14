@@ -51,6 +51,7 @@ async function run() {
   try {
     const bookingDB = client.db('stay-vista')
     const roomsCollection = bookingDB.collection('roomsCollection')
+    const usersCollection = bookingDB.collection('usersCollection') 
 
     // auth related api
     app.post('/jwt', async (req, res) => {
@@ -87,9 +88,9 @@ async function run() {
     // Save or modify user email, status in DB
     app.put('/users/:email', async (req, res) => {
       const email = req.params.email
-      const user = req.body
+      const user = req.body 
       const query = { email: email }
-      const options = { upsert: true }
+      const options = { upsert: true } 
       const isExist = await usersCollection.findOne(query)
       console.log('User found?----->', isExist)
       if (isExist) return res.send(isExist)
@@ -110,7 +111,7 @@ async function run() {
     })
 
     // get one room data by using id 
-    app.get('/rooms/:id',async(req,res)=>{
+    app.get('/rooms/:id', verifyToken,async(req,res)=>{
       const id = req.params.id;
       console.log(id)
       const query = {_id: new ObjectId(id)}
@@ -120,7 +121,7 @@ async function run() {
 
     // get host room 
     try{
-       app.get('/hostRooms/:email',async(req,res)=>{
+       app.get('/hostRooms/:email',verifyToken,async(req,res)=>{
          const email = req.params.email;
          console.log(email)
          const query = {'host.email': email}
@@ -133,12 +134,25 @@ async function run() {
 
     // save room data 
     try{
-      app.post('/saveRooms',async(req,res)=>{
+      app.post('/saveRooms',verifyToken,async(req,res)=>{
         const room = req.body
         const result = await roomsCollection.insertOne(room)
         res.send(result)
       }
       )
+    }catch(err){
+      console.log(err)
+    }
+
+
+    // get user role 
+    try{
+     app.get('/getUserRole/:email',verifyToken, async(req,res)=>{
+      const email = req.params.email;
+      const query = {email: email}
+      const result = await usersCollection.findOne(query)
+      res.send(result)
+     })
     }catch(err){
       console.log(err)
     }
