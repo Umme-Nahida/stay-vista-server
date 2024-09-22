@@ -208,6 +208,42 @@ async function run() {
       console.log(err)
     }
 
+
+    // get all booking for guest
+    try{
+     app.get('/bookings',async(req,res)=>{
+      const email = req.query.email;
+      if(!email) return res.send({massage:"not found any guest email"})
+      const query = {'guest.email': email}
+      const result = await bookingCollection.find(query).toArray()
+      res.send(result)
+     })
+    }catch(err){
+      console.log(err)
+    }
+    // get all booking for host
+    try{
+     app.get('/bookings/host',async(req,res)=>{
+      const email = req.query.email;
+      if(!email) return res.send({massage:"not found any guest email"})
+      const query = {host: email}
+      const result = await bookingCollection.find(query).toArray()
+      res.send(result)
+     })
+    }catch(err){
+      console.log(err)
+    }
+
+    // get all user from db 
+    try{
+         app.get('/users',async(req,res)=>{
+          const result = await usersCollection.find().toArray();
+          res.send(result)
+         })
+    }catch(err){
+      console.log(err)
+    }
+
     // Send a ping to confirm a successful connection
     await client.db('admin').command({ ping: 1 })
     console.log(
