@@ -7,6 +7,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
 const jwt = require('jsonwebtoken')
 const morgan = require('morgan')
 const port = process.env.PORT || 8000
+const stripe = require('stripe')(process.env.SRIPE_SECRET_KEY)
 
 // middleware
 const corsOptions = {
@@ -19,7 +20,6 @@ app.use(express.json())
 app.use(cookieParser())
 app.use(morgan('dev'))
 
-console.log(process.env.DB_User)
 
 const verifyToken = async (req, res, next) => {
   const token = req.cookies?.token
@@ -37,7 +37,7 @@ const verifyToken = async (req, res, next) => {
   })
 }
 
-console.log(process.env.DB_User)
+// console.log(process.env.DB_User)
 
 const uri = `mongodb+srv://${process.env.DB_User}:${process.env.DB_Pass}@cluster0.ytj0kf8.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 const client = new MongoClient(uri, {
@@ -52,6 +52,7 @@ async function run() {
     const bookingDB = client.db('stay-vista')
     const roomsCollection = bookingDB.collection('roomsCollection')
     const usersCollection = bookingDB.collection('usersCollection') 
+    const bookingCollection = bookingDB.collection('bookingsCollection') 
 
     // auth related api
     app.post('/jwt', async (req, res) => {
@@ -151,6 +152,56 @@ async function run() {
       const email = req.params.email;
       const query = {email: email}
       const result = await usersCollection.findOne(query)
+      res.send(result)
+     })
+    }catch(err){
+      console.log(err)
+    }
+
+
+    // create payment intent 
+    try{
+      app.post('/paymentIntent',async(req,res)=>{
+        const {price} = req.body;
+        console.log("price:",price)
+
+        // create payment intent 
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount:parseFloat(price * 100),
+          currency: "usd",
+          payment_method_types:['card']
+        })
+
+        res.send({clientSecret: paymentIntent.client_secret})
+      })
+    }catch(err){
+      console.log(err)
+    }
+
+    // save bookings data 
+    try{
+     app.post('/bookings',async(req,res)=>{
+      const bookings = req.body;
+      const result = await bookingCollection.insertOne(bookings);
+      res.send(result)
+     })
+    }catch(err){
+      console.log(err)
+    }
+
+    // update bookings status 
+    try{
+     app.patch('/updatedStatus/:id',async(req,res)=>{
+      const id = req.params.id;
+      const status = req.body.status;
+      const query = {_id: new ObjectId(id)}
+      const updateData = {
+        $set: {
+          booked: status
+        }
+      }
+
+      const result = await roomsCollection.updateOne(query,updateData)
       res.send(result)
      })
     }catch(err){
