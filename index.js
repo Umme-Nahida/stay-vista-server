@@ -3,7 +3,7 @@ const app = express()
 require('dotenv').config()
 const cors = require('cors')
 const cookieParser = require('cookie-parser')
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb')
+const { MongoClient, ServerApiVersion, ObjectId, Timestamp } = require('mongodb')
 const jwt = require('jsonwebtoken')
 const morgan = require('morgan')
 const port = process.env.PORT || 8000
@@ -29,7 +29,7 @@ const verifyToken = async (req, res, next) => {
   }
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
     if (err) {
-      console.log(err)
+      console.log('err',err)
       return res.status(401).send({ message: 'unauthorized access' })
     }
     req.user = decoded
@@ -240,6 +240,26 @@ async function run() {
           const result = await usersCollection.find().toArray();
           res.send(result)
          })
+    }catch(err){
+      console.log(err)
+    }
+
+    try{
+       app.put('/updateUser/:email',async(req,res)=>{
+        const email = req.params.email;
+        const user = req.body;
+        const query={email:email}
+        const option = {upsert: true}
+        const updateRole = {
+          $set: {
+            ...user,
+            timestamp: Date.now()
+          }
+        }
+        const result = await usersCollection.updateOne(query,updateRole,option)
+        res.send(result)
+
+       })
     }catch(err){
       console.log(err)
     }
