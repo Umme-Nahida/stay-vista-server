@@ -94,7 +94,18 @@ async function run() {
       const options = { upsert: true } 
       const isExist = await usersCollection.findOne(query)
       console.log('User found?----->', isExist)
-      if (isExist) return res.send(isExist)
+      if (isExist){
+        if(isExist?.status ==='Requested'){
+          const result = await usersCollection.updateOne(
+            query,
+            {$set: user},
+            options
+          )
+          res.send(result)
+        }else{ 
+          res.send({message: 'user already exist'})
+        }
+      }
       const result = await usersCollection.updateOne(
         query,
         {
