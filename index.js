@@ -59,7 +59,7 @@ async function run() {
      const email = req.user;
      const query = {email:email}
      const user = await usersCollection.findOne(query)
-     if(!email || !user || !user.role === 'admin') return res.status(401).send({message:'UnAuthrized access (no admin)'})
+     if(!user || !user.role === 'admin') return res.status(401).send({message:'UnAuthrized access (no admin)'})
       next()
     }
 
