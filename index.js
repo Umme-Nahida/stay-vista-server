@@ -88,33 +88,37 @@ async function run() {
 
     // Save or modify user email, status in DB
     app.put('/users/:email', async (req, res) => {
-      const email = req.params.email
-      const user = req.body 
-      const query = { email: email }
-      const options = { upsert: true } 
-      const isExist = await usersCollection.findOne(query)
-      console.log('User found?----->', isExist)
-      if (isExist){
-        if(isExist?.status ==='Requested'){
-          const result = await usersCollection.updateOne(
-            query,
-            {$set: user},
-            options
-          )
-          res.send(result)
-        }else{ 
-          res.send({message: 'user already exist'})
+      try {
+        const email = req.params.email;
+        const user = req.body;
+        const query = { email: email };
+        const options = { upsert: true };
+        
+        const isExist = await usersCollection.findOne(query);
+        console.log('User found?----->', isExist);
+        
+        if (isExist) {
+          if (isExist?.status === 'Requested') {
+            const result = await usersCollection.updateOne(query, { $set: user }, options);
+            return res.send(result);  // Return here to avoid further execution
+          } else {
+            return res.send({ message: 'User already exists' });  // Return to prevent multiple sends
+          }
         }
+        
+        // If the user doesn't exist, update with a timestamp
+        const result = await usersCollection.updateOne(
+          query,
+          { $set: { ...user, timestamp: Date.now() } },
+          options
+        );
+        res.send(result);
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: 'Server error' });  // Handle any server errors
       }
-      const result = await usersCollection.updateOne(
-        query,
-        {
-          $set: { ...user, timestamp: Date.now() },
-        },
-        options
-      )
-      res.send(result)
-    })
+    });
+    
 
     // get all rooms data
     app.get('/rooms',async(req,res)=>{
