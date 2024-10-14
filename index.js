@@ -54,6 +54,15 @@ async function run() {
     const usersCollection = bookingDB.collection('usersCollection') 
     const bookingCollection = bookingDB.collection('bookingsCollection') 
 
+    // verify admin role api 
+    const verifyAdmin = async(req,res,next)=>{
+     const email = req.user;
+     const query = {email:email}
+     const user = await usersCollection.findOne(query)
+     if(!email || !user || !user.role === 'admin') return res.status(401).send({message:'UnAuthrized access (no admin)'})
+      next()
+    }
+
     // auth related api
     app.post('/jwt', async (req, res) => {
       const user = req.body
@@ -99,7 +108,7 @@ async function run() {
         
         if (isExist) {
           if (isExist?.status === 'Requested') {
-            const result = await usersCollection.updateOne(query, { $set: user }, options);
+            const result = await usersCollection.updateOne(query, { $set: user.status }, options);
             return res.send(result);  // Return here to avoid further execution
           } else {
             return res.send({ message: 'User already exists' });  // Return to prevent multiple sends
@@ -110,6 +119,30 @@ async function run() {
         const result = await usersCollection.updateOne(
           query,
           { $set: { ...user, timestamp: Date.now() } },
+          options
+        );
+        res.send(result);
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: 'Server error' });  // Handle any server errors
+      }
+    });
+
+
+
+    // create api for become a any role position by admin 
+    app.put('/userHost/:email',verifyToken,verifyAdmin, async (req, res) => {
+      try {
+        const email = req.params.email;
+        const user = req.body;
+        const query = { email: email };
+        const options = { upsert: true };
+        console.log('host',user)
+        
+        //  update guest role for become a host  
+        const result = await usersCollection.updateOne(
+          query,
+          { $set: {role: user.role, status:'Verified'}},
           options
         );
         res.send(result);
