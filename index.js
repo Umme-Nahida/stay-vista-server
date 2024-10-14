@@ -62,6 +62,14 @@ async function run() {
      if(!user || !user.role === 'admin') return res.status(401).send({message:'UnAuthrized access (no admin)'})
       next()
     }
+    // verify  Host role api 
+    const verifyHost = async(req,res,next)=>{
+     const email = req.user;
+     const query = {email:email}
+     const user = await usersCollection.findOne(query)
+     if(!user || !user.role === 'host') return res.status(401).send({message:'UnAuthrized access (no admin)'})
+      next()
+    }
 
     // auth related api
     app.post('/jwt', async (req, res) => {
@@ -139,7 +147,7 @@ async function run() {
         const options = { upsert: true };
         console.log('host',user)
         
-        //  update guest role for become a host  
+        //  modify role by admin 
         const result = await usersCollection.updateOne(
           query,
           { $set: {role: user.role, status:'Verified'}},
@@ -170,7 +178,7 @@ async function run() {
 
     // get host room 
     try{
-       app.get('/hostRooms/:email',verifyToken,async(req,res)=>{
+       app.get('/hostRooms/:email',verifyToken,verifyHost,async(req,res)=>{
          const email = req.params.email;
          console.log(email)
          const query = {'host.email': email}
